@@ -21,15 +21,26 @@ class Wayland(AutotoolsPackage):
     version('1.17.93', sha256='293536ad23bfed15fc34e2a63bbb511167e8b096c0eba35e805cb64d46ad62ae')
     version('1.17.92', sha256='d944a7b999cfe6fee5327a2315c8e5891222c5a88a96e1ca73485978e4990512')
 
+    variant('docs', default=False, description='Generate documentation')
+
     depends_on('autoconf',  type='build')
     depends_on('automake',  type='build')
     depends_on('libtool',   type='build')
     depends_on('m4',        type='build')
     depends_on('pkgconfig', type='build')
-    depends_on('doxygen',   type='build')
+    depends_on('doxygen',   type='build', when='+docs')
+    depends_on('graphviz',  type='build', when='+docs')
     depends_on('xmlto',     type='build')
     depends_on('libxslt',   type='build')
     depends_on('libxml2')
     depends_on('chrpath')
     depends_on('expat')
     depends_on('libffi')
+
+    def configure_args(self):
+        args = []
+        if '+docs' in self.spec:
+            args.append('--enable-documentation')
+        else:
+            args.append('--disable-documentation')
+        return args
