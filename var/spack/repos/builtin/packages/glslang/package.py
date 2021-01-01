@@ -21,11 +21,16 @@ class Glslang(CMakePackage):
     version('master', branch='master')
 
     # FIXME: Add dependencies if required.
-    # depends_on('foo')
+    depends_on('spirv-tools')
+
+    patch('external-spirv-tools.patch')
 
     def cmake_args(self):
         # FIXME: Add arguments other than
         # FIXME: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE
         # FIXME: If not needed delete this function
-        args = []
+        args = [
+            '-DBUILD_TESTING=OFF',
+            '-DBUILD_EXTERNAL=OFF',
+        ]
         return args
