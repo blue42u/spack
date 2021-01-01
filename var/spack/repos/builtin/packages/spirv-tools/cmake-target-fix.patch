@@ -1,0 +1,34 @@
+diff --git a/source/CMakeLists.txt b/source/CMakeLists.txt
+index 65087f2c..8b9627d2 100644
+--- a/source/CMakeLists.txt
++++ b/source/CMakeLists.txt
+@@ -382,8 +382,10 @@ if(SPIRV_TOOLS_BUILD_STATIC)
+   # or "${SPIRV_TOOLS}-shared" depending on the value of BUILD_SHARED_LIBS.
+   if(BUILD_SHARED_LIBS)
+     add_library(${SPIRV_TOOLS} ALIAS ${SPIRV_TOOLS}-shared)
++    set(SPIRV_TOOLS_MAIN_TARGET ${SPIRV_TOOLS}-shared)
+   else()
+     add_library(${SPIRV_TOOLS} ALIAS ${SPIRV_TOOLS}-static)
++    set(SPIRV_TOOLS_MAIN_TARGET ${SPIRV_TOOLS}-static)
+   endif()
+ 
+   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-static ${SPIRV_TOOLS}-shared)
+@@ -391,6 +393,7 @@ else()
+   add_library(${SPIRV_TOOLS} ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_SOURCES})
+   spirv_tools_default_target_options(${SPIRV_TOOLS})
+   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared)
++  set(SPIRV_TOOLS_MAIN_TARGET ${SPIRV_TOOLS})
+ endif()
+ 
+ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+@@ -415,8 +418,8 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
+   # Special config file for root library compared to other libs.
+   file(WRITE ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake
+     "include(\${CMAKE_CURRENT_LIST_DIR}/${SPIRV_TOOLS}Target.cmake)\n"
+-    "set(${SPIRV_TOOLS}_LIBRARIES ${SPIRV_TOOLS})\n"
+-    "get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS} INTERFACE_INCLUDE_DIRECTORIES)\n")
++    "set(${SPIRV_TOOLS}_LIBRARIES ${SPIRV_TOOLS_MAIN_TARGET})\n"
++    "get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS_MAIN_TARGET} INTERFACE_INCLUDE_DIRECTORIES)\n")
+   install(FILES ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake DESTINATION ${PACKAGE_DIR})
+ endif(ENABLE_SPIRV_TOOLS_INSTALL)
+ 

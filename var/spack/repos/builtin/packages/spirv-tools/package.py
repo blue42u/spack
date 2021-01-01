@@ -40,6 +40,8 @@ class SpirvTools(CMakePackage):
     # FIXME: Add dependencies if required.
     depends_on('spirv-headers')
 
+    patch('cmake-target-fix.patch')
+
     def cmake_args(self):
         # FIXME: Add arguments other than
         # FIXME: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE
