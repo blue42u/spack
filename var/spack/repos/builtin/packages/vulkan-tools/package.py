@@ -46,9 +46,5 @@ class VulkanTools(CMakePackage):
         # FIXME: CMAKE_INSTALL_PREFIX and CMAKE_BUILD_TYPE
         # FIXME: If not needed delete this function
         args = [
-            '-DBUILD_WSI_XCB_SUPPORT=OFF',
-            '-DBUILD_WSI_XLIB_SUPPORT=OFF',
-            '-DBUILD_WSI_WAYLAND_SUPPORT=OFF',
-            '-DBUILD_CUBE=OFF',
         ]
         return args

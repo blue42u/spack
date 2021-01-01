@@ -38,6 +38,10 @@ class Libvulkan(CMakePackage):
 
     # FIXME: Add dependencies if required.
     depends_on('vulkan-headers', type='build')
+    depends_on('libx11', type='link')
+    depends_on('libxrandr', type='link')
+    depends_on('libxcb', type='link')
+    depends_on('wayland', type='link')
 
     def cmake_args(self):
         # FIXME: Add arguments other than
@@ -45,9 +49,6 @@ class Libvulkan(CMakePackage):
         # FIXME: If not needed delete this function
         args = [
             '-DVULKAN_HEADERS_INSTALL_DIR=%s' % self.spec['vulkan-headers'].prefix,
-            '-DBUILD_WSI_XCB_SUPPORT=OFF',
-            '-DBUILD_WSI_XLIB_SUPPORT=OFF',
-            '-DBUILD_WSI_WAYLAND_SUPPORT=OFF',
             '-DBUILD_TESTS=OFF',
         ]
         return args
