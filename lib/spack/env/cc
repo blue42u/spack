@@ -570,4 +570,9 @@ if [[ $SPACK_DEBUG == TRUE ]]; then
     echo "[$mode] ${full_command[*]}" >> "$output_log"
 fi
 
+# Setup LIBRARY_PATH, for -print-search-dirs
+lib_path=
+for dir in "${link_dirs[@]}"; do lib_path="${lib_path:+${lib_path}:}$dir"; done
+export LIBRARY_PATH="$lib_path${LIBRARY_PATH:+:${LIBRARY_PATH}}"
+
 exec "${full_command[@]}"
