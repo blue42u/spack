@@ -771,6 +771,10 @@ if [ "$SPACK_DEBUG" = TRUE ]; then
     echo "[$mode] ${full_command_list}" >> "$output_log"
 fi
 
+# Setup LIBRARY_PATH, for -print-search-dirs
+extend LIBRARY_PATH SPACK_LINK_DIRS :
+export LIBRARY_PATH
+
 # Execute the full command, preserving spaces with IFS set
 # to the alarm bell separator.
 IFS="$lsep"; exec $full_command_list
