@@ -139,6 +139,20 @@ class Binutils(AutotoolsPackage, GNUMirrorPackage):
             # also grab the headers from the bfd directory
             install(join_path(self.build_directory, 'bfd', '*.h'),
                     extradir)
+        # Remove the safety inclusion guard in bfd.h
+        lines = []
+        with open(join_path(self.prefix.include, 'bfd.h')) as f:
+          state = 'before'
+          for line in f:
+            if state == 'before' and 'PR 14072' in line:
+              state = 'during'
+            elif state == 'during':
+              if line.startswith('#endif'):
+                state = 'after'
+            else:
+              lines.append(line)
+        with open(join_path(self.prefix.include, 'bfd.h'), 'w') as f:
+          f.writelines(lines)
 
     def flag_handler(self, name, flags):
         # Use a separate variable for injecting flags. This way, installing
