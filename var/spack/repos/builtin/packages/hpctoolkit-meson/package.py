@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
 from spack import *
-
+import os
 
 class HpctoolkitMeson(MesonPackage):
     """HPCToolkit is an integrated suite of tools for measurement and analysis
@@ -85,4 +85,10 @@ class HpctoolkitMeson(MesonPackage):
               msg='cuda requires 2020.03.01 or later')
 
     def meson_args(self):
-      return []
+      args = [
+        '-Dhpcrun=enabled', '-Dhpclink=enabled', '-Dhpcstruct=enabled',
+        '-Dhpcstruct=enabled',
+        '-Dcuda-monitoring=%s' % ('enabled' if '+cuda' in self.spec else 'disabled'),
+        '-Dmpi=%s' % ('enabled' if '+mpi' in self.spec else 'disabled'),
+      ]
+      return args
