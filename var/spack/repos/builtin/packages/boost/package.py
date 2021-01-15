@@ -545,6 +545,9 @@ class Boost(Package):
     def setup_run_environment(self, env):
         env.set('BOOST_ROOT', self.prefix)
 
+    def setup_dependent_build_environment(self, env, spec):
+        env.set('BOOST_ROOT', self.prefix)
+
     def setup_dependent_package(self, module, dependent_spec):
         # Disable find package's config mode for versions of Boost that
         # didn't provide it. See https://github.com/spack/spack/issues/20169
