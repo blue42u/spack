@@ -66,6 +66,7 @@ class HpctoolkitMeson(MesonPackage):
     depends_on('libunwind@1.4: +xz+pic', when='@2020.09.00:')
     depends_on('libunwind@1.4: +xz', when='@:2020.08.99')
     depends_on('mbedtls+pic')
+    depends_on('meson@0.57:')
     depends_on('pkgconf', type='build')
     depends_on('xerces-c transcoder=iconv')
     depends_on('xz+pic', type='link', when='@2020.09.00:')
