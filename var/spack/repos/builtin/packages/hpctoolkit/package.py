@@ -52,9 +52,6 @@ class Hpctoolkit(MesonPackage):
             description='Support ROCM on AMD GPUs, requires ROCM as '
             'external packages (2021.03.01 or later).')
 
-    variant('debug', default=False,
-            description='Build in debug (develop) mode.')
-
     variant('viewer', default=True, description='Include hpcviewer.')
 
     boost_libs = (
