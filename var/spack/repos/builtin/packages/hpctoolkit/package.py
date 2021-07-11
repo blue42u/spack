@@ -6,7 +6,7 @@
 from spack import *
 
 
-class Hpctoolkit(AutotoolsPackage):
+class Hpctoolkit(MesonPackage):
     """HPCToolkit is an integrated suite of tools for measurement and analysis
     of program performance on computers ranging from multicore desktop systems
     to the nation's largest supercomputers. By using statistical sampling of
@@ -20,19 +20,7 @@ class Hpctoolkit(AutotoolsPackage):
 
     tags = ['e4s']
 
-    version('develop', branch='develop')
-    version('master',  branch='master')
-    version('2021.10.15', commit='a8f289e4dc87ff98e05cfc105978c09eb2f5ea16')
-    version('2021.05.15', commit='004ea0c2aea6a261e7d5d216c24f8a703fc6c408')
-    version('2021.03.01', commit='68a051044c952f0f4dac459d9941875c700039e7')
-    version('2020.08.03', commit='d9d13c705d81e5de38e624254cf0875cce6add9a')
-    version('2020.07.21', commit='4e56c780cffc53875aca67d6472a2fb3678970eb')
-    version('2020.06.12', commit='ac6ae1156e77d35596fea743ed8ae768f7222f19')
-    version('2020.03.01', commit='94ede4e6fa1e05e6f080be8dc388240ea027f769')
-    version('2019.12.28', commit='b4e1877ff96069fd8ed0fdf0e36283a5b4b62240')
-    version('2019.08.14', commit='6ea44ed3f93ede2d0a48937f288a2d41188a277c')
-    version('2018.12.28', commit='8dbf0d543171ffa9885344f32f23cc6f7f6e39bc')
-    version('2018.11.05', commit='d0c43e39020e67095b1f1d8bb89b75f22b12aee9')
+    version('master', branch='new-buildsys', git='https://github.com/blue42u/hpctoolkit.git')
 
     # Options for MPI and hpcprof-mpi.  We always support profiling
     # MPI applications.  These options add hpcprof-mpi, the MPI
@@ -79,6 +67,7 @@ class Hpctoolkit(AutotoolsPackage):
     depends_on('binutils@:2.33.1 +libiberty~nls', type='link', when='@:2020.03')
     depends_on('boost' + boost_libs)
     depends_on('bzip2+shared', type='link')
+    depends_on('cmake', type='build')
     depends_on('dyninst@10.2.0:', when='@2021.00:')
     depends_on('dyninst@9.3.2:', when='@:2020')
     depends_on('elfutils+bzip2+xz~nls', type='link')
@@ -89,6 +78,8 @@ class Hpctoolkit(AutotoolsPackage):
     depends_on('libmonitor+hpctoolkit+dlopen', when='@:2020')
     depends_on('libunwind@1.4: +xz+pic')
     depends_on('mbedtls+pic')
+    depends_on('meson@0.57:')
+    depends_on('pkgconf', type='build')
     depends_on('xerces-c transcoder=iconv')
     depends_on('xz+pic', type='link')
     depends_on('zlib+shared')
@@ -130,65 +121,15 @@ class Hpctoolkit(AutotoolsPackage):
           sha256='fd0fd7419f66a1feba8046cff9df7f27abce8629ee2708b8a9daa12c1b51243c',
           when='@2019.08.01:2021.03 %gcc@11.0:')
 
-    flag_handler = AutotoolsPackage.build_system_flags
-
-    def configure_args(self):
-        spec = self.spec
-
-        args = [
-            '--with-binutils=%s'     % spec['binutils'].prefix,
-            '--with-boost=%s'        % spec['boost'].prefix,
-            '--with-bzip=%s'         % spec['bzip2'].prefix,
-            '--with-dyninst=%s'      % spec['dyninst'].prefix,
-            '--with-elfutils=%s'     % spec['elfutils'].prefix,
-            '--with-gotcha=%s'       % spec['gotcha'].prefix,
-            '--with-tbb=%s'          % spec['intel-tbb'].prefix,
-            '--with-libdwarf=%s'     % spec['libdwarf'].prefix,
-            '--with-libmonitor=%s'   % spec['libmonitor'].prefix,
-            '--with-libunwind=%s'    % spec['libunwind'].prefix,
-            '--with-mbedtls=%s'      % spec['mbedtls'].prefix,
-            '--with-xerces=%s'       % spec['xerces-c'].prefix,
-            '--with-lzma=%s'         % spec['xz'].prefix,
-            '--with-zlib=%s'         % spec['zlib'].prefix,
-        ]
-
-        if '+cuda' in spec:
-            args.append('--with-cuda=%s' % spec['cuda'].prefix)
-
-        if spec.target.family == 'x86_64':
-            args.append('--with-xed=%s' % spec['intel-xed'].prefix)
-
-        if spec.satisfies('@2021.05.01:'):
-            args.append('--with-memkind=%s' % spec['memkind'].prefix)
-
-        if spec.satisfies('+papi'):
-            args.append('--with-papi=%s' % spec['papi'].prefix)
-        else:
-            args.append('--with-perfmon=%s' % spec['libpfm4'].prefix)
-
-        if spec.satisfies('+rocm'):
-            args.extend([
-                '--with-rocm-hip=%s'    % spec['hip'].prefix,
-                '--with-rocm-dbgapi=%s' % spec['rocm-dbgapi'].prefix,
-                '--with-rocm-tracer=%s' % spec['roctracer-dev'].prefix,
-            ])
-
-        # MPI options for hpcprof-mpi.
-        if '+cray' in spec:
-            args.extend([
-                '--enable-mpi-search=cray',
-                '--enable-all-static',
-            ])
-        elif '+mpi' in spec:
-            args.append('MPICXX=%s' % spec['mpi'].mpicxx)
-
-        if '+all-static' in spec:
-            args.append('--enable-all-static')
-
-        if spec.satisfies('+debug'):
-            args.append('--enable-develop')
-
-        return args
+    def meson_args(self):
+      args = [
+        '-Dhpcrun=enabled', '-Dhpclink=enabled', '-Dhpcstruct=enabled',
+        '-Dhpcstruct=enabled',
+        '-Dcuda-monitoring=%s' % ('enabled' if '+cuda' in self.spec else 'disabled'),
+        '-Dmpi=%s' % ('enabled' if '+mpi' in self.spec else 'disabled'),
+        '-Dversion_spack_spec=%s' % self.spec.format('{@version} {variants} {/hash:7} {%compiler.name}{@compiler.version}'),
+      ]
+      return args
 
     # We only want hpctoolkit and hpcviewer paths and man paths in the
     # module file.  The run dependencies are all curried into hpctoolkit
