@@ -378,10 +378,7 @@ def set_wrapper_variables(pkg, env):
 
     # Find ccache binary and hand it to build environment
     if spack.config.get('config:ccache'):
-        ccache = Executable('ccache')
-        if not ccache:
-            raise RuntimeError("No ccache binary found in PATH")
-        env.set(SPACK_CCACHE_BINARY, ccache)
+        env.set(SPACK_CCACHE_BINARY, spack.bootstrap.ensure_ccache_available_or_raise())
 
     # Gather information about various types of dependencies
     link_deps  = set(pkg.spec.traverse(root=False, deptype=('link')))

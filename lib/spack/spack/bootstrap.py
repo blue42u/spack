@@ -484,6 +484,10 @@ def _bootstrap_config_scopes():
         msg = '[BOOTSTRAP CONFIG SCOPE] name={0}, path={1}'
         tty.debug(msg.format(generic_scope.name, generic_scope.path))
         tty.debug(msg.format(platform_scope.name, platform_scope.path))
+    tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_bootstrap')
+    config_scopes.extend([
+        spack.config.InternalConfigScope('_bootstrap', {'config': {'ccache': False}})
+    ])
     return config_scopes
 
 
@@ -545,3 +549,9 @@ def ensure_clingo_importable_or_raise():
     ensure_module_importable_or_raise(
         module='clingo', abstract_spec=clingo_root_spec()
     )
+
+
+def ensure_ccache_available_or_raise():
+    with spack.bootstrap.ensure_bootstrap_configuration():
+        assert(not spack.config.get('config:ccache'))
+        return spack.bootstrap.get_executable('ccache', install=True)

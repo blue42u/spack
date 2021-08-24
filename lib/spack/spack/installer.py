@@ -1115,6 +1115,10 @@ class PackageInstaller(object):
         Args:
             task (BuildTask): the installation build task for a package"""
 
+        # Do this early to order the messages properly
+        if spack.config.get('config:ccache'):
+            spack.bootstrap.ensure_ccache_available_or_raise()
+
         install_args = task.request.install_args
         cache_only = install_args.get('cache_only')
         explicit = task.explicit
