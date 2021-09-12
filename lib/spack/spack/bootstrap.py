@@ -469,7 +469,7 @@ def get_executable(exe, spec=None, install=False):
     _raise_error(exe, spec)
 
 
-def _bootstrap_config_scopes():
+def _bootstrap_config_scopes(allow_ccache=True):
     tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_builtin')
     config_scopes = [
         spack.config.InternalConfigScope('_builtin', spack.config.config_defaults)
@@ -484,15 +484,16 @@ def _bootstrap_config_scopes():
         msg = '[BOOTSTRAP CONFIG SCOPE] name={0}, path={1}'
         tty.debug(msg.format(generic_scope.name, generic_scope.path))
         tty.debug(msg.format(platform_scope.name, platform_scope.path))
-    tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_bootstrap')
-    config_scopes.extend([
-        spack.config.InternalConfigScope('_bootstrap', {'config': {'ccache': False}})
-    ])
+    if not allow_ccache:
+        tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_disable_ccache')
+        config_scopes.extend([
+            spack.config.InternalConfigScope('_disable_ccache', {'config': {'ccache': False}})
+        ])
     return config_scopes
 
 
 @contextlib.contextmanager
-def ensure_bootstrap_configuration():
+def ensure_bootstrap_configuration(**kwargs):
     bootstrap_store_path = store_path()
     with spack.environment.deactivate_environment():
         with spack.architecture.use_platform(spack.architecture.real_platform()):
@@ -500,7 +501,7 @@ def ensure_bootstrap_configuration():
                 with spack.store.use_store(bootstrap_store_path):
                     # Default configuration scopes excluding command line
                     # and builtin but accounting for platform specific scopes
-                    config_scopes = _bootstrap_config_scopes()
+                    config_scopes = _bootstrap_config_scopes(**kwargs)
                     with spack.config.use_configuration(*config_scopes):
                         with spack.modules.disable_modules():
                             with spack_python_interpreter():
@@ -552,6 +553,6 @@ def ensure_clingo_importable_or_raise():
 
 
 def ensure_ccache_available_or_raise():
-    with spack.bootstrap.ensure_bootstrap_configuration():
+    with spack.bootstrap.ensure_bootstrap_configuration(allow_ccache=False):
         assert(not spack.config.get('config:ccache'))
         return spack.bootstrap.get_executable('ccache', install=True)
