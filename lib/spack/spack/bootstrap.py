@@ -42,6 +42,9 @@ from spack.util.environment import EnvironmentModifications
 #: Map a bootstrapper type to the corresponding class
 _bootstrap_methods = {}
 
+# Set of currently-disabled bootstrappable modules/executables
+_bootstrap_disabled_features = set()
+
 
 def _bootstrapper(type):
     """Decorator to register classes implementing bootstrapping
@@ -469,7 +472,7 @@ def get_executable(exe, spec=None, install=False):
     _raise_error(exe, spec)
 
 
-def _bootstrap_config_scopes(allow_ccache=True):
+def _bootstrap_config_scopes():
     tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_builtin')
     config_scopes = [
         spack.config.InternalConfigScope('_builtin', spack.config.config_defaults)
@@ -484,16 +487,27 @@ def _bootstrap_config_scopes(allow_ccache=True):
         msg = '[BOOTSTRAP CONFIG SCOPE] name={0}, path={1}'
         tty.debug(msg.format(generic_scope.name, generic_scope.path))
         tty.debug(msg.format(platform_scope.name, platform_scope.path))
-    if not allow_ccache:
+    if 'ccache' in _bootstrap_disabled_features:
         tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_disable_ccache')
         config_scopes.extend([
             spack.config.InternalConfigScope('_disable_ccache', {'config': {'ccache': False}})
+        ])
+    if 'clingo' in _bootstrap_disabled_features:
+        tty.debug('[BOOTSTRAP CONFIG SCOPE] name=_disable_clingo')
+        config_scopes.extend([
+            spack.config.InternalConfigScope('_disable_clingo', {'config': {'concretizer': 'original'}})
         ])
     return config_scopes
 
 
 @contextlib.contextmanager
-def ensure_bootstrap_configuration(**kwargs):
+def ensure_bootstrap_configuration(allow_ccache=True, allow_clingo=True):
+    # Temporarily adjust the current disabled feature set based on the arguments
+    global _bootstrap_disabled_features
+    old_bootstrap_disabled_features = _bootstrap_disabled_features
+    if not allow_ccache: _bootstrap_disabled_features.add('ccache')
+    if not allow_clingo: _bootstrap_disabled_features.add('clingo')
+
     bootstrap_store_path = store_path()
     with spack.environment.deactivate_environment():
         with spack.architecture.use_platform(spack.architecture.real_platform()):
@@ -501,11 +515,13 @@ def ensure_bootstrap_configuration(**kwargs):
                 with spack.store.use_store(bootstrap_store_path):
                     # Default configuration scopes excluding command line
                     # and builtin but accounting for platform specific scopes
-                    config_scopes = _bootstrap_config_scopes(**kwargs)
+                    config_scopes = _bootstrap_config_scopes()
                     with spack.config.use_configuration(*config_scopes):
                         with spack.modules.disable_modules():
                             with spack_python_interpreter():
                                 yield
+
+    _bootstrap_disabled_features = old_bootstrap_disabled_features
 
 
 def store_path():
@@ -547,12 +563,17 @@ def clingo_root_spec():
 
 def ensure_clingo_importable_or_raise():
     """Ensure that the clingo module is available for import."""
-    ensure_module_importable_or_raise(
-        module='clingo', abstract_spec=clingo_root_spec()
-    )
+    global _bootstrap_disabled_features
+    assert 'clingo' not in _bootstrap_disabled_features, 'Bootstrap recursion detected!'
+    with spack.bootstrap.ensure_bootstrap_configuration(allow_clingo=False):
+        ensure_module_importable_or_raise(
+            module='clingo', abstract_spec=clingo_root_spec()
+        )
 
 
 def ensure_ccache_available_or_raise():
+    """Ensure that ccache is available and return its runner."""
+    global _bootstrap_disabled_features
+    assert 'ccache' not in _bootstrap_disabled_features, 'Bootstrap recursion detected!'
     with spack.bootstrap.ensure_bootstrap_configuration(allow_ccache=False):
-        assert(not spack.config.get('config:ccache'))
         return spack.bootstrap.get_executable('ccache', install=True)
