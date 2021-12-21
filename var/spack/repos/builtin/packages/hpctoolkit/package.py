@@ -7,6 +7,7 @@ import llnl.util.tty as tty
 
 from spack import *
 
+from tempfile import TemporaryDirectory
 
 class Hpctoolkit(MesonPackage):
     """HPCToolkit is an integrated suite of tools for measurement and analysis
@@ -80,7 +81,8 @@ class Hpctoolkit(MesonPackage):
     depends_on('libmonitor+hpctoolkit+dlopen', when='@:2020')
     depends_on('libunwind@1.4: +xz+pic')
     depends_on('mbedtls+pic')
-    depends_on('meson@0.57:')
+    # NOTE: Meson needs a 'link' dep so we can use it for standalone testing
+    depends_on('meson@0.60.2:', type=('build','link'))
     depends_on('pkgconf', type='build')
     depends_on('xerces-c transcoder=iconv')
     depends_on('xz+pic', type='link')
@@ -140,35 +142,36 @@ class Hpctoolkit(MesonPackage):
             env.prepend_path('PATH', self.spec['hpcviewer'].prefix.bin)
             env.prepend_path('MANPATH', self.spec['hpcviewer'].prefix.share.man)
 
-    # Build tests (spack install --run-tests).  Disable the default
-    # spack tests and run autotools 'make check', but only from the
-    # tests directory.
-    build_time_test_callbacks = []
-    install_time_test_callbacks = []
-
-    @run_after('install')
-    @on_package_attributes(run_tests=True)
-    def check_install(self):
-        if self.spec.satisfies('@2022:'):
-            with working_dir('tests'):
-                make('check')
-        else:
-            tty.warn('spack test for hpctoolkit requires 2022.01.15 or later')
-
     # Post-Install tests (spack test run).  These are the same tests
-    # but with a different Makefile that works outside the build
-    # directory.
-    @run_after('install')
+    # as the tests in the source but running the installed instance.
+    @run_after('build')
     def copy_test_files(self):
         if self.spec.satisfies('@2022:'):
             self.cache_extra_test_sources(['tests'])
 
     def test(self):
-        test_dir = join_path(self.test_suite.current_test_cache_dir, 'tests')
-        if self.spec.satisfies('@2022:'):
-            with working_dir(test_dir):
-                make('-f', 'Makefile.spack', 'all')
-                self.run_test('./run-sort', status=[0], installed=False,
-                              purpose='selection sort unit test')
-        else:
-            tty.warn('spack test for hpctoolkit requires 2022.01.15 or later')
+        if not self.spec.satisfies('@2022:'):
+            tty.warn('spack test for hpctoolkit requires branch master')
+            return
+        print("""\
+              project('HPCToolkit out-of-tree test suite', ['c','cpp'])
+              subdir('tests')
+              """,
+              file=open(join_path(self.test_suite.current_test_cache_dir, 'meson.build'), 'w'))
+
+        # We need to use Meson, so construct the appropriate environment for it
+        env = spack.util.environment.EnvironmentModifications()
+        for dep in self.spec['meson'].traverse():
+            env.extend(spack.user_environment.environment_modifications_for_spec(dep))
+        with spack.util.environment.preserve_environment(*env.group_by_name().keys()):
+            env.apply_modifications()
+            # Maintain a temporary build directory, to keep our junk clean
+            with TemporaryDirectory(prefix='hpctoolkit.', dir=self.test_suite.stage) as builddir:
+                self.run_test('meson', ['setup', builddir, self.test_suite.current_test_cache_dir],
+                              purpose='Configuring out-of-tree testing project...')
+                self.run_test('meson', ['compile', '-v', '-C', builddir],
+                              purpose='Compiling test binaries...')
+                self.run_test('meson', ['test', '-C', builddir],
+                              purpose='Running test suite...')
+                self.run_test('cat', [join_path(builddir, 'meson-logs', 'testlog.txt')],
+                              purpose='Dumping full Meson test log...')
