@@ -133,18 +133,12 @@ class Hpctoolkit(MesonPackage):
       ]
       return args
 
-    # We only want hpctoolkit and hpcviewer paths and man paths in the
-    # module file.  The run dependencies are all curried into hpctoolkit
-    # and we don't want to risk exposing a package if the application
-    # uses a different version of the same package.
+    # Make sure the hpcviewer run dependency appears in the hpctoolkit
+    # module file, to assist with ease of use.
     def setup_run_environment(self, env):
-        spec = self.spec
-        env.clear()
-        env.prepend_path('PATH', spec.prefix.bin)
-        env.prepend_path('MANPATH', spec.prefix.share.man)
-        if '+viewer' in spec:
-            env.prepend_path('PATH', spec['hpcviewer'].prefix.bin)
-            env.prepend_path('MANPATH', spec['hpcviewer'].prefix.share.man)
+        if '+viewer' in self.spec:
+            env.prepend_path('PATH', self.spec['hpcviewer'].prefix.bin)
+            env.prepend_path('MANPATH', self.spec['hpcviewer'].prefix.share.man)
 
     # Build tests (spack install --run-tests).  Disable the default
     # spack tests and run autotools 'make check', but only from the
