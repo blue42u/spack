@@ -25,6 +25,7 @@ class Hpctoolkit(MesonPackage):
 
     test_requires_compiler = True
 
+    version('develop', branch='new-buildsys-develop', git='https://github.com/blue42u/hpctoolkit.git')
     version('master', branch='new-buildsys', git='https://github.com/blue42u/hpctoolkit.git')
 
     # Options for MPI and hpcprof-mpi.  We always support profiling
