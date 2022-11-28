@@ -547,6 +547,10 @@ class URLFetchStrategy(FetchStrategy):
 class CacheURLFetchStrategy(URLFetchStrategy):
     """The resource associated with a cache URL may be out of date."""
 
+    def __init__(self, url=None, checksum=None, notify=False, **kwargs):
+        super(CacheURLFetchStrategy, self).__init__(url, checksum, **kwargs)
+        self.notify = bool(notify)
+
     @_needs_stage
     def fetch(self):
         reg_str = r"^file://"
@@ -574,7 +578,8 @@ class CacheURLFetchStrategy(URLFetchStrategy):
                 raise
 
         # Notify the user how we fetched.
-        tty.msg("Using cached archive: {0}".format(path))
+        if self.notify:
+            tty.msg("Using cached archive: {0}".format(path))
 
 
 class VCSFetchStrategy(FetchStrategy):
