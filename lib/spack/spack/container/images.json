@@ -36,6 +36,34 @@
         "develop": "latest"
       }
     },
+    "almalinux:8": {
+      "bootstrap": {
+        "template": "container/almalinux_8.dockerfile",
+        "image": "quay.io/almalinux/8-base:8"
+      },
+      "os_package_manager": "yum",
+      "build": "spack/almalinux8",
+      "build_tags": {
+        "develop": "latest"
+      },
+      "final": {
+        "image": "quay.io/almalinux/8-base:8"
+      }
+    },
+    "fedora:36": {
+      "bootstrap": {
+        "template": "container/fedora_36.dockerfile",
+        "image": "registry.fedoraproject.org/fedora:36"
+      },
+      "os_package_manager": "yum",
+      "build": "spack/fedora36",
+      "build_tags": {
+        "develop": "latest"
+      },
+      "final": {
+        "image": "registry.fedoraproject.org/fedora:36"
+      }
+    },
     "opensuse/leap:15": {
       "bootstrap": {
         "template": "container/leap-15.dockerfile"
